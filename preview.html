@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gardiner - Carta</title>
+  <meta name="theme-color" content="#17140f">
+  <meta name="description" content="Carta de Gardiner. Comida, bebidas y carta de vinos.">
+  <meta property="og:title" content="Gardiner - Carta">
+  <meta property="og:description" content="Comida, bebidas y carta de vinos.">
+  <meta property="og:image" content="logo/logoGR.jpg">
+  <link rel="icon" href="logo/logoGR.jpg">
+  <link rel="preload" as="image" href="logo/logoGR-web.png">
+
+<style>
+  :root {
+    --fondo:       #17140f;   /* negro calido */
+    --oro:         #b8973a;
+    --oro-tenue:   #8a6d1f;
+    --papel:       #ffffff;
+    --barra:       64px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--oro);
+    font-family: Georgia, "Times New Roman", serif;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  /* ---------- barra fija de arriba ---------- */
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(23, 20, 15, .94);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(184, 151, 58, .28);
+  }
+
+  .barra {
+    height: var(--barra);
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .barra img { height: 30px; width: auto; display: block; }
+
+  .idiomas {
+    display: flex;
+    border: 1px solid var(--oro-tenue);
+    border-radius: 999px;
+    overflow: hidden;
+    flex: none;
+  }
+
+  .idiomas button {
+    font: inherit;
+    font-size: 13px;
+    letter-spacing: .08em;
+    padding: 6px 14px;
+    border: 0;
+    background: transparent;
+    color: var(--oro-tenue);
+    cursor: pointer;
+  }
+
+  .idiomas button[aria-pressed="true"] { background: var(--oro); color: var(--fondo); }
+
+  nav {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 16px 10px;
+    display: flex;
+    gap: 22px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  nav a {
+    color: var(--oro-tenue);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    padding-bottom: 3px;
+    border-bottom: 1px solid transparent;
+  }
+
+  nav a:hover, nav a:focus-visible { color: var(--oro); border-bottom-color: var(--oro); }
+
+  /* ---------- las hojas ---------- */
+
+  main { max-width: 820px; margin: 0 auto; padding: 26px 16px 8px; }
+
+  .hoja {
+    margin: 0 0 26px;
+    scroll-margin-top: calc(var(--barra) + 46px);
+  }
+
+  .hoja img {
+    display: block;
+    width: 100%;
+    background: var(--papel);
+    border-radius: 3px;
+    box-shadow: 0 14px 34px rgba(0, 0, 0, .55), 0 0 0 1px rgba(184, 151, 58, .18);
+    cursor: zoom-in;
+  }
+
+  .oculta { display: none; }
+
+  /* ---------- pie con los contactos ---------- */
+
+  footer {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 20px 16px 46px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: 1px solid var(--oro-tenue);
+    border-radius: 999px;
+    color: var(--oro);
+    text-decoration: none;
+    font-size: 14px;
+    letter-spacing: .04em;
+  }
+
+  footer a:hover, footer a:focus-visible {
+    background: var(--oro);
+    color: var(--fondo);
+    border-color: var(--oro);
+  }
+
+  footer svg { width: 17px; height: 17px; fill: currentColor; flex: none; }
+
+  /* ---------- pantalla de carga ---------- */
+
+  #aviso {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--oro-tenue);
+    letter-spacing: .1em;
+    font-size: 14px;
+  }
+
+  #aviso img { width: 190px; max-width: 60%; opacity: .85; margin-bottom: 22px; }
+
+  /* ---------- visor de pantalla completa ---------- */
+
+  #visor {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(10, 8, 6, .97);
+    display: none;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #visor.abierto { display: block; }
+
+  #visor img {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+    max-height: 100vh;
+    background: var(--papel);
+    cursor: zoom-in;
+  }
+
+  /* al tocar la hoja se agranda y se puede recorrer arrastrando */
+  #visor img.ampliada {
+    max-width: none;
+    max-height: none;
+    width: 190%;
+    cursor: zoom-out;
+  }
+
+  #cerrar {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 51;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--oro-tenue);
+    background: rgba(23, 20, 15, .9);
+    color: var(--oro);
+    font: 22px/1 Georgia, serif;
+    cursor: pointer;
+    display: none;          /* el JS lo muestra al abrir el visor */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
+</head>
+
+<body>
+
+<header hidden id="cabecera">
+  <div class="barra">
+    <img src="logo/logoGR-web.png" alt="Gardiner">
+    <div class="idiomas">
+      <button type="button" data-idioma="es" aria-pressed="true">ES</button>
+      <button type="button" data-idioma="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+  <nav id="navegacion"></nav>
+</header>
+
+<main id="carta"></main>
+<footer id="contacto" hidden></footer>
+
+<div id="visor" role="dialog" aria-modal="true" aria-label="Hoja ampliada">
+  <button id="cerrar" type="button" aria-label="Cerrar">&times;</button>
+</div>
+
+<div id="aviso">
+  <img src="logo/logoGR-web.png" alt="Gardiner"><br>
+  CARGANDO LA CARTA
+</div>
+
+<script>
+/* ==================================================================
+   CONFIGURACION - lo unico que se toca
+   ==================================================================
+
+   SECCIONES: de donde salen las hojas.
+     carpeta   : nombre de la carpeta
+     nombre    : como se llaman los archivos (n = numero de hoja)
+     max       : techo de seguridad (la busqueda corta sola antes)
+     idioma    : 'es' o 'en'; define en que solapa se muestra
+     etiquetas : nombre de cada hoja en la barra de arriba, en orden.
+                 Si aparecen hojas de mas sin etiqueta, igual se
+                 muestran; solo que no tienen salto propio en la barra.
+   ================================================================== */
+
+const SECCIONES = [
+  { carpeta: 'menu',   nombre: n => 'gr' + n,                max: 15, idioma: 'es',
+    etiquetas: ['Comida', 'Bebidas'] },
+
+  { carpeta: 'vinos',  nombre: n => 'gr_vinos-' + pad(n, 2), max: 40, idioma: 'es',
+    etiquetas: ['Vinos'] },
+
+  { carpeta: 'ingles', nombre: n => 'gr_en_' + n,            max: 15, idioma: 'en',
+    etiquetas: ['Menu', 'Drinks'] }
+];
+
+/* CONTACTO: completar lo que corresponda.
+   Lo que se deje vacio simplemente no aparece como boton. */
+const CONTACTO = {
+  whatsapp:  '',   // solo numeros, con codigo de pais. Ej: '5491122334455'
+  instagram: '',   // el usuario sin arroba. Ej: 'gardinerbuenosaires'
+  mapa:      '',   // link de Google Maps
+  textoMapa: 'Como llegar'
+};
+
+const EXTENSIONES = ['jpg', 'jpeg'];
+const LOTE = 5;          // cuantas hojas se sondean a la vez
+
+// ==================================================================
+
+function pad(n, largo) {
+  return String(n).padStart(largo, '0');
+}
+
+/* Con doble clic (file://) el navegador bloquea fetch, asi que ahi se usa
+   Image(). En GitHub Pages se usa HEAD, que pregunta "existe?" sin bajar
+   un solo byte de la foto. */
+const LOCAL = location.protocol === 'file:';
+
+function existe(url) {
+  if (LOCAL) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload  = () => resolve(url);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+  return fetch(url, { method: 'HEAD' }).then(r => r.ok ? url : null).catch(() => null);
+}
+
+function buscarHoja(sec, n) {
+  return Promise.all(
+    EXTENSIONES.map(ext => existe(sec.carpeta + '/' + sec.nombre(n) + '.' + ext))
+  ).then(r => r.find(Boolean) || null);
+}
+
+/* Sondea de a lotes y corta cuando un lote entero vino vacio.
+   Tolera huecos sueltos (falta la 7 pero esta la 8) sin cortar. */
+async function buscarHojas(sec) {
+  const hojas = [];
+  for (let n = 1; n <= sec.max; n += LOTE) {
+    const lote = [];
+    for (let i = n; i < n + LOTE && i <= sec.max; i++) lote.push(i);
+
+    const encontradas = (await Promise.all(lote.map(i => buscarHoja(sec, i)))).filter(Boolean);
+    if (!encontradas.length) break;
+    hojas.push(...encontradas);
+  }
+  return hojas;
+}
+
+// ---------- idioma ----------
+
+function idiomaGuardado() {
+  try {
+    const g = localStorage.getItem('idioma');
+    if (g === 'es' || g === 'en') return g;
+  } catch (e) { /* navegacion privada: no pasa nada, se sigue de largo */ }
+
+  // primera visita: si el telefono no esta en espanol, arranca en ingles
+  return (navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en';
+}
+
+function ponerIdioma(idioma) {
+  document.documentElement.lang = idioma;
+
+  document.querySelectorAll('.hoja').forEach(h => {
+    h.classList.toggle('oculta', h.dataset.idioma !== idioma);
+  });
+  document.querySelectorAll('#navegacion a').forEach(a => {
+    a.classList.toggle('oculta', a.dataset.idioma !== idioma);
+  });
+  document.querySelectorAll('.idiomas button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.idioma === idioma));
+  });
+
+  try { localStorage.setItem('idioma', idioma); } catch (e) {}
+}
+
+// ---------- visor de pantalla completa ----------
+
+const visor = document.getElementById('visor');
+const botonCerrar = document.getElementById('cerrar');
+
+function abrirVisor(src) {
+  visor.querySelectorAll('img').forEach(i => i.remove());
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = 'Hoja de la carta';
+  img.addEventListener('click', () => img.classList.toggle('ampliada'));
+
+  visor.appendChild(img);
+  visor.classList.add('abierto');
+  botonCerrar.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarVisor() {
+  visor.classList.remove('abierto');
+  botonCerrar.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+botonCerrar.addEventListener('click', cerrarVisor);
+visor.addEventListener('click', e => { if (e.target === visor) cerrarVisor(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarVisor(); });
+
+// ---------- armado ----------
+
+function crearImg(src, prioritaria) {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = 'Hoja de la carta';
+  img.decoding = 'async';
+  if (prioritaria) {
+    img.loading = 'eager';
+    img.fetchPriority = 'high';
+  } else {
+    img.loading = 'lazy';
+  }
+  img.addEventListener('click', () => abrirVisor(src));
+  return img;
+}
+
+function crearEnlace(texto, ancla, idioma) {
+  const a = document.createElement('a');
+  a.href = '#' + ancla;
+  a.textContent = texto;
+  a.dataset.idioma = idioma;
+  return a;
+}
+
+function armarContacto() {
+  const pie = document.getElementById('contacto');
+
+  const iconos = {
+    whatsapp:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 00-8.6 15L2 22l5.2-1.4A10 10 0 1012 2zm0 18a8 8 0 01-4.1-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8 8 0 1112 20zm4.4-5.8c-.2-.1-1.4-.7-1.6-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.5 6.5 0 01-3.2-2.8c-.1-.2 0-.4.1-.5l.4-.5c.1-.2.1-.3 0-.5l-.7-1.7c-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.8.8-.9 1.8-.4 3a9.3 9.3 0 004 4.2c1.6.7 2.6.7 3.4.5.5-.1 1.3-.6 1.5-1.2.2-.5.2-1 .1-1.1z"/></svg>',
+    instagram: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4 1 .5.4.8.8 1 1.4.2.4.3 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-1 1.4-.4.5-.8.8-1.4 1-.4.2-1 .3-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-1-.5-.4-.8-.8-1-1.4-.2-.4-.3-1-.4-2.2-.1-1.3-.1-1.7-.1-4.9s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 1-1.4.4-.5.8-.8 1.4-1 .4-.2 1-.3 2.2-.4 1.3-.1 1.7-.1 4.9-.1zm0 3.2a6.6 6.6 0 100 13.2 6.6 6.6 0 000-13.2zm0 10.9a4.3 4.3 0 110-8.6 4.3 4.3 0 010 8.6zm6.8-11.1a1.5 1.5 0 11-3.1 0 1.5 1.5 0 013.1 0z"/></svg>',
+    mapa:      '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg>'
+  };
+
+  const botones = [];
+  if (CONTACTO.whatsapp)  botones.push(['https://wa.me/' + CONTACTO.whatsapp, 'whatsapp', 'Reservar']);
+  if (CONTACTO.instagram) botones.push(['https://instagram.com/' + CONTACTO.instagram, 'instagram', '@' + CONTACTO.instagram]);
+  if (CONTACTO.mapa)      botones.push([CONTACTO.mapa, 'mapa', CONTACTO.textoMapa]);
+
+  if (!botones.length) return;   // sin datos cargados, el pie no aparece
+
+  for (const [url, icono, texto] of botones) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.innerHTML = iconos[icono];
+    const span = document.createElement('span');
+    span.textContent = texto;      // textContent, no innerHTML: nada que se pueda inyectar
+    a.appendChild(span);
+    pie.appendChild(a);
+  }
+  pie.hidden = false;
+}
+
+async function armarCarta() {
+  const contenedor = document.getElementById('carta');
+  const navegacion = document.getElementById('navegacion');
+  const aviso = document.getElementById('aviso');
+  let total = 0;
+
+  for (const sec of SECCIONES) {
+    const hojas = await buscarHojas(sec);
+
+    hojas.forEach((hoja, i) => {
+      const bloque = document.createElement('div');
+      bloque.className = 'hoja';
+      bloque.dataset.idioma = sec.idioma;
+      bloque.appendChild(crearImg(hoja, total === 0));
+
+      // si esta hoja tiene nombre, se le pone ancla y va a la barra de arriba
+      const etiqueta = sec.etiquetas && sec.etiquetas[i];
+      if (etiqueta) {
+        bloque.id = sec.carpeta + '-' + (i + 1);
+        navegacion.appendChild(crearEnlace(etiqueta, bloque.id, sec.idioma));
+      }
+
+      contenedor.appendChild(bloque);
+      total++;
+    });
+  }
+
+  if (!total) {
+    aviso.textContent = 'No se pudo cargar la carta. Proba refrescar la pagina.';
+    return;
+  }
+
+  ponerIdioma(idiomaGuardado());
+  armarContacto();
+  aviso.remove();
+  document.getElementById('cabecera').hidden = false;
+}
+
+document.querySelectorAll('.idiomas button').forEach(b => {
+  b.addEventListener('click', () => {
+    ponerIdioma(b.dataset.idioma);
+    window.scrollTo({ top: 0 });
+  });
+});
+
+armarCarta();
+</script>
+</body>
+</html>
