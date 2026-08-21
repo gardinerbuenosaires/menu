@@ -90,15 +90,21 @@
 
   .idiomas button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); }
 
+  /* Los accesos no entran en una linea, asi que la barra se desliza de
+     costado en vez de crecer hacia abajo: el encabezado no se come la
+     pantalla del telefono. */
   nav {
     max-width: 820px;
     margin: 0 auto;
     padding: 0 16px 11px;
     display: flex;
     gap: 24px;
-    justify-content: center;
-    flex-wrap: wrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
+
+  nav::-webkit-scrollbar { display: none; }
 
   nav a {
     color: var(--tenue);
@@ -107,6 +113,8 @@
     font-weight: 700;
     letter-spacing: .18em;
     text-transform: uppercase;
+    white-space: nowrap;
+    flex: none;
     padding-bottom: 3px;
     border-bottom: 1px solid transparent;
   }
@@ -447,11 +455,47 @@ function crearImg(src, prioritaria) {
   return img;
 }
 
-function crearEnlace(texto, ancla, idioma) {
+/* secciones.json lo genera el conversor a partir de los PDF: trae la medida
+   de cada hoja y los titulos que encontro, con la altura a la que estan.
+   Si no se puede leer (por ejemplo abriendo el archivo con doble clic),
+   la carta funciona igual, solo que con los accesos fijos de SECCIONES. */
+let MANIFIESTO = { hojas: [], titulos: [] };
+
+async function leerManifiesto() {
+  try {
+    const r = await fetch('secciones.json');
+    if (r.ok) MANIFIESTO = await r.json();
+  } catch (e) { /* sin manifiesto se sigue igual */ }
+}
+
+function medidasDe(carpeta, hoja) {
+  return MANIFIESTO.hojas.find(h => h.carpeta === carpeta && h.hoja === hoja);
+}
+
+function titulosDe(carpeta, hoja) {
+  return MANIFIESTO.titulos.filter(t => t.carpeta === carpeta && t.hoja === hoja);
+}
+
+// "Vinos Blancos" -> "Blancos": en la barra de vinos, repetir "Vinos" sobra
+function acortar(texto) {
+  return texto.replace(/^vinos\s+/i, '');
+}
+
+/* Lleva a un punto dentro de una hoja, no al principio.
+   Funciona antes de que la imagen cargue porque cada hoja ya tiene
+   reservada su altura con aspect-ratio. */
+function irA(bloque, y) {
+  const barra = document.getElementById('cabecera').offsetHeight;
+  const destino = bloque.offsetTop + y * bloque.offsetHeight - barra - 8;
+  window.scrollTo({ top: Math.max(0, destino), behavior: 'smooth' });
+}
+
+function crearEnlace(texto, bloque, y, idioma) {
   const a = document.createElement('a');
-  a.href = '#' + ancla;
+  a.href = '#' + bloque.id;
   a.textContent = texto;
   a.dataset.idioma = idioma;
+  a.addEventListener('click', e => { e.preventDefault(); irA(bloque, y); });
   return a;
 }
 
@@ -505,24 +549,44 @@ async function armarCarta() {
   const aviso = document.getElementById('aviso');
   let total = 0;
 
+  await leerManifiesto();
+
   for (const sec of SECCIONES) {
     const hojas = await buscarHojas(sec);
 
     hojas.forEach((hoja, i) => {
+      const numero = i + 1;
       const bloque = document.createElement('div');
       bloque.className = 'hoja';
       bloque.dataset.idiomas = sec.idiomas.join(' ');
-      bloque.id = sec.carpeta + '-' + (i + 1);
-      bloque.appendChild(crearImg(hoja, total === 0));
+      bloque.id = sec.carpeta + '-' + numero;
 
-      // si la hoja tiene nombre en algun idioma, va como salto en la barra.
-      // Los vinos generan dos enlaces al mismo sitio: "Vinos" y "Wines".
-      for (const idioma of sec.idiomas) {
-        const etiqueta = sec.etiquetas && sec.etiquetas[idioma] && sec.etiquetas[idioma][i];
-        if (etiqueta) navegacion.appendChild(crearEnlace(etiqueta, bloque.id, idioma));
-      }
+      const img = crearImg(hoja, total === 0);
+      // reservar el alto de antemano evita el salton cuando entra la imagen
+      const medidas = medidasDe(sec.carpeta, numero);
+      if (medidas) img.style.aspectRatio = medidas.ancho + ' / ' + medidas.alto;
+      bloque.appendChild(img);
 
       contenedor.appendChild(bloque);
+
+      // Los titulos que el conversor leyo del PDF mandan, porque son mas
+      // precisos. La etiqueta fija de SECCIONES solo aparece si esta hoja
+      // no tiene ninguno: asi no quedan dos accesos al mismo lugar.
+      const detectados = titulosDe(sec.carpeta, numero);
+
+      if (detectados.length) {
+        for (const t of detectados) {
+          for (const idioma of sec.idiomas) {
+            navegacion.appendChild(crearEnlace(acortar(t.titulo), bloque, t.y, idioma));
+          }
+        }
+      } else {
+        for (const idioma of sec.idiomas) {
+          const etiqueta = sec.etiquetas && sec.etiquetas[idioma] && sec.etiquetas[idioma][i];
+          if (etiqueta) navegacion.appendChild(crearEnlace(etiqueta, bloque, 0, idioma));
+        }
+      }
+
       total++;
     });
   }

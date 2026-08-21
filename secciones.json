@@ -1,0 +1,210 @@
+{
+  "hojas": [
+    {
+      "carpeta": "menu",
+      "hoja": 1,
+      "ancho": 2014,
+      "alto": 3318
+    },
+    {
+      "carpeta": "menu",
+      "hoja": 2,
+      "ancho": 1821,
+      "alto": 3000
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 1,
+      "ancho": 2014,
+      "alto": 3318
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "ancho": 1821,
+      "alto": 3000
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 1,
+      "ancho": 1804,
+      "alto": 2571
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 2,
+      "ancho": 1791,
+      "alto": 2553
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 3,
+      "ancho": 1791,
+      "alto": 2553
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 4,
+      "ancho": 1804,
+      "alto": 2571
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 5,
+      "ancho": 1804,
+      "alto": 2571
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 6,
+      "ancho": 1769,
+      "alto": 2521
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 7,
+      "ancho": 1778,
+      "alto": 2534
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 8,
+      "ancho": 1774,
+      "alto": 2528
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 9,
+      "ancho": 1774,
+      "alto": 2528
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 10,
+      "ancho": 1778,
+      "alto": 2534
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 11,
+      "ancho": 1769,
+      "alto": 2521
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 12,
+      "ancho": 1769,
+      "alto": 2521
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 13,
+      "ancho": 1775,
+      "alto": 2530
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 14,
+      "ancho": 1775,
+      "alto": 2530
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 15,
+      "ancho": 1775,
+      "alto": 2530
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 16,
+      "ancho": 1627,
+      "alto": 2319
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 17,
+      "ancho": 1787,
+      "alto": 2547
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 18,
+      "ancho": 1729,
+      "alto": 2464
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 19,
+      "ancho": 1511,
+      "alto": 2154
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 20,
+      "ancho": 1496,
+      "alto": 2132
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 21,
+      "ancho": 1496,
+      "alto": 2132
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 22,
+      "ancho": 1526,
+      "alto": 2175
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 23,
+      "ancho": 1496,
+      "alto": 2132
+    }
+  ],
+  "titulos": [
+    {
+      "carpeta": "vinos",
+      "hoja": 1,
+      "titulo": "Espumantes",
+      "y": 0.0985
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 2,
+      "titulo": "Champagnes",
+      "y": 0.1132
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 3,
+      "titulo": "Vinos espumantes del mundo",
+      "y": 0.1047
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 3,
+      "titulo": "Vinos Blancos",
+      "y": 0.3895
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 5,
+      "titulo": "Vinos Rosados",
+      "y": 0.4854
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 6,
+      "titulo": "Vinos Tintos",
+      "y": 0.3498
+    },
+    {
+      "carpeta": "vinos",
+      "hoja": 18,
+      "titulo": "Nuestra Cava",
+      "y": 0.0877
+    }
+  ]
+}

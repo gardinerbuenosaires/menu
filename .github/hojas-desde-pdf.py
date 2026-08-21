@@ -32,7 +32,9 @@ OBJETIVO_PX = 35       # alto en pixeles del cuerpo de texto
 ANCHO_MIN   = 1200
 ANCHO_MAX   = 2400     # tope, por si alguna hoja tiene la letra diminuta
 CALIDAD    = 82
+FACTOR_TITULO = 2.6    # un titulo de seccion mide al menos esto por el cuerpo
 REGISTRO   = ORIGINALES / 'procesado.json'   # que version de cada original ya se convirtio
+MANIFIESTO = Path('secciones.json')          # titulos de cada hoja, para los accesos directos
 
 # Son tres archivos de Illustrator distintos: espanol, ingles y vinos.
 #
@@ -159,6 +161,92 @@ def hojas_existentes(sec):
     return encontradas
 
 
+def titulos_de(pagina):
+    """Titulos de seccion de una hoja: [(texto, altura relativa 0..1), ...]
+
+    Un titulo es texto bastante mas grande que el cuerpo. Hay que armarlo
+    con cuidado porque Illustrator parte los renglones espaciados en varios
+    fragmentos ('Bebidas' + 'e' + 'Infusiones') y a veces el titulo ocupa
+    dos renglones ('Vinos espumantes' / 'del mundo').
+    """
+    spans = [s
+             for b in pagina.get_text('dict')['blocks']
+             for l in b.get('lines', [])
+             for s in l['spans'] if s['text'].strip()]
+    if not spans:
+        return []
+
+    cuerpo = statistics.median([s['size'] for s in spans])
+    grandes = sorted((s for s in spans if s['size'] >= cuerpo * FACTOR_TITULO),
+                     key=lambda s: (round(s['bbox'][1] / 4), s['bbox'][0]))
+
+    # 1) juntar los fragmentos de un mismo renglon
+    renglones = []
+    for s in grandes:
+        if renglones and abs(s['bbox'][1] - renglones[-1][2]) <= 4:
+            renglones[-1][0].append(s['text'].strip())
+        else:
+            renglones.append([[s['text'].strip()], s['size'], s['bbox'][1]])
+
+    # 2) juntar renglones consecutivos que son el mismo titulo partido en dos
+    unidos = []
+    for partes, tam, y in renglones:
+        if unidos and (y - unidos[-1][2]) < unidos[-1][1] * 1.6:
+            unidos[-1][0].extend(partes)
+        else:
+            unidos.append([list(partes), tam, y])
+
+    salida = []
+    for partes, tam, y in unidos:
+        texto = ' '.join(' '.join(partes).split())
+        if len(texto) >= 3:
+            rel = (y - pagina.rect.y0) / pagina.rect.height
+            salida.append((texto, round(max(0.0, min(1.0, rel)), 4)))
+    return salida
+
+
+def escribir_manifiesto():
+    """Deja en secciones.json los titulos de cada hoja, para que la carta
+       pueda armar los accesos directos sin que nadie los escriba a mano."""
+    hojas, titulos = [], []
+    for sec in SECCIONES:
+        original = buscar_original(sec)
+        if original is None:
+            continue
+        doc = pymupdf.open(original)
+        numero = 0
+        for pagina in doc:
+            recorte = pymupdf.Rect(pagina.trimbox)
+            if recorte.is_valid and not recorte.is_empty and recorte != pagina.rect:
+                pagina.set_cropbox(recorte)
+            if not pagina.get_text().strip():
+                continue                      # mesa vacia: se salteo al convertir
+            numero += 1
+
+            # las medidas son las mismas que salieron al convertir, porque
+            # el ancho se calcula igual; sirven para reservar el espacio en
+            # la pagina antes de que la imagen llegue a cargarse
+            ancho = ancho_para(pagina)
+            zoom = ancho / pagina.rect.width
+            # irect es como el propio motor redondea al rasterizar; calcularlo
+            # a mano daba 1 px de diferencia en el alto
+            caja = (pagina.rect * pymupdf.Matrix(zoom, zoom)).irect
+            hojas.append({'carpeta': sec['destino'], 'hoja': numero,
+                          'ancho': caja.width, 'alto': caja.height})
+
+            for texto, y in titulos_de(pagina):
+                titulos.append({'carpeta': sec['destino'], 'hoja': numero,
+                                'titulo': texto, 'y': y})
+        doc.close()
+
+    MANIFIESTO.write_text(
+        json.dumps({'hojas': hojas, 'titulos': titulos}, ensure_ascii=False, indent=2) + '\n',
+        encoding='utf-8')
+    print(f'\n{MANIFIESTO}: {len(hojas)} hojas, {len(titulos)} accesos directos')
+    for m in titulos:
+        print(f"   {m['carpeta']}/{m['hoja']:<3} {m['y']:.2f}  {m['titulo']}")
+
+
 def ancho_para(pagina):
     """Ancho en px para que el cuerpo de texto de esta hoja mida OBJETIVO_PX.
 
@@ -259,6 +347,9 @@ def main():
     else:
         print('\nNada para hacer.')
 
+    # El manifiesto se rehace siempre, aunque no haya habido conversion:
+    # es barato (solo lee texto) y asi nunca queda desfasado de las hojas.
+    escribir_manifiesto()
     avisar_de_los_no_reconocidos(usados)
 
 
