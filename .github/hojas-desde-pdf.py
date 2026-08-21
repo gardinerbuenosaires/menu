@@ -24,15 +24,19 @@ ORIGINALES = Path('originales')
 # El ancho de cada hoja NO es fijo: se calcula para que el texto reciba
 # siempre la misma cantidad de pixeles por letra.
 #
-# La carta no esta compuesta pareja: las hojas de vinos 1 a 18 usan Palatino
-# de 11 pt y las 19 a 23 usan Baskerville de 13 pt. Renderizadas todas al
-# mismo ancho, las de 11 pt reciben menos pixeles por letra y se ven blandas
-# al lado de las otras. Calculando el ancho por hoja, quedan parejas.
+# Si una hoja tiene la letra mas chica que otra, al mismo ancho recibe
+# menos pixeles por letra y se ve mas blanda al lado de las demas.
+# Calculando el ancho hoja por hoja, todas quedan parejas.
 OBJETIVO_PX = 35       # alto en pixeles del cuerpo de texto
 ANCHO_MIN   = 1200
 ANCHO_MAX   = 2400     # tope, por si alguna hoja tiene la letra diminuta
 CALIDAD    = 82
-FACTOR_TITULO = 2.6    # un titulo de seccion mide al menos esto por el cuerpo
+# Que cuenta como titulo de seccion. Se calibra solo contra cada archivo,
+# porque no todas las cartas usan la misma escala: en Gardiner los titulos
+# miden 2.8 veces el cuerpo y en otras cartas 1.6, asi que un umbral fijo
+# funcionaba en una y en la otra no encontraba ninguno.
+PROPORCION_TITULO = 0.9    # del texto mas grande de todo el documento
+MINIMO_SOBRE_CUERPO = 1.25 # y ademas tiene que destacarse en su propia hoja
 REGISTRO   = ORIGINALES / 'procesado.json'   # que version de cada original ya se convirtio
 MANIFIESTO = Path('secciones.json')          # titulos de cada hoja, para los accesos directos
 
@@ -161,46 +165,97 @@ def hojas_existentes(sec):
     return encontradas
 
 
-def titulos_de(pagina):
+def parece_espaciado(texto):
+    """'B E B I D A S  Y' -> True.  'Vinos Blancos' -> False.
+
+    Algunos titulos se componen separando las letras. Al extraer el texto
+    queda un espacio entre cada una y se pierde donde termina la palabra."""
+    piezas = texto.split()
+    return len(piezas) >= 4 and sum(1 for p in piezas if len(p) == 1) / len(piezas) >= 0.6
+
+
+def reparar_espaciado(chars):
+    """Rehace las palabras midiendo el hueco entre letra y letra.
+
+    El espaciado entre letras de una misma palabra es parejo; el corte de
+    palabra deja un hueco bastante mayor. Se usa eso para separarlas."""
+    ls = [(c['c'], c['bbox'][0], c['bbox'][2]) for c in chars if c['c'].strip()]
+    if len(ls) < 2:
+        return ''.join(c for c, _, _ in ls)
+    huecos = [ls[i+1][1] - ls[i][2] for i in range(len(ls)-1)]
+    normal = statistics.median(huecos)
+    salida = ls[0][0]
+    for i, h in enumerate(huecos):
+        if h > normal * 1.8:
+            salida += ' '
+        salida += ls[i+1][0]
+    return salida
+
+
+def titulos_de(pagina, corte):
     """Titulos de seccion de una hoja: [(texto, altura relativa 0..1), ...]
 
-    Un titulo es texto bastante mas grande que el cuerpo. Hay que armarlo
-    con cuidado porque Illustrator parte los renglones espaciados en varios
-    fragmentos ('Bebidas' + 'e' + 'Infusiones') y a veces el titulo ocupa
-    dos renglones ('Vinos espumantes' / 'del mundo').
-    """
+    Solo se repara el espaciado de los titulos que lo necesitan: aplicarlo
+    a todos rompe los que ya venian bien, porque en una tipografia con
+    mucho ajuste entre pares los huecos normales ya son irregulares."""
     spans = [s
-             for b in pagina.get_text('dict')['blocks']
+             for b in pagina.get_text('rawdict')['blocks']
              for l in b.get('lines', [])
-             for s in l['spans'] if s['text'].strip()]
+             for s in l['spans'] if s.get('chars')]
     if not spans:
         return []
 
     cuerpo = statistics.median([s['size'] for s in spans])
-    grandes = sorted((s for s in spans if s['size'] >= cuerpo * FACTOR_TITULO),
-                     key=lambda s: (round(s['bbox'][1] / 4), s['bbox'][0]))
 
-    # 1) juntar los fragmentos de un mismo renglon
+    grandes = []
+    for s in spans:
+        if s['size'] < corte or s['size'] < cuerpo * MINIMO_SOBRE_CUERPO:
+            continue
+        crudo = ''.join(c['c'] for c in s['chars'])
+        texto = reparar_espaciado(s['chars']) if parece_espaciado(crudo) else crudo
+        texto = ' '.join(texto.split())
+        if texto:
+            grandes.append((texto, s['bbox'][0], s['bbox'][2], s['bbox'][1], s['size']))
+
+    grandes.sort(key=lambda g: (round(g[3] / 4), g[1]))
+
+    # 1) juntar fragmentos del mismo renglon, pero solo si estan pegados:
+    #    dos titulos pueden compartir renglon en columnas distintas
     renglones = []
-    for s in grandes:
-        if renglones and abs(s['bbox'][1] - renglones[-1][2]) <= 4:
-            renglones[-1][0].append(s['text'].strip())
-        else:
-            renglones.append([[s['text'].strip()], s['size'], s['bbox'][1]])
+    for texto, x0, x1, y, tam in grandes:
+        if renglones:
+            ant = renglones[-1]
+            mismo_alto = abs(y - ant['y']) <= 4
+            hueco = x0 - ant['x1']
+            # El hueco tiene que ser chico. Puede ser un poco negativo,
+            # porque las letras vecinas se superponen apenas ('B' 'ee' 'r'
+            # 's' de un mismo titulo). Lo que se descarta es un salto
+            # negativo grande: eso es otro titulo, en otra columna.
+            cerca = -tam * 0.3 <= hueco < tam * 1.5
+            if mismo_alto and cerca:
+                # pegado o separado: lo decide el hueco, igual que entre
+                # letras. 'B'+'ee'+'r'+'s' es "Beers", no "B ee r s".
+                union = ' ' if hueco > tam * 0.2 else ''
+                ant['texto'] += union + texto
+                ant['x1'] = x1
+                continue
+        renglones.append({'texto': texto, 'x0': x0, 'x1': x1, 'y': y, 'tam': tam})
 
-    # 2) juntar renglones consecutivos que son el mismo titulo partido en dos
+    # 2) juntar renglones seguidos que son un mismo titulo partido en dos
     unidos = []
-    for partes, tam, y in renglones:
-        if unidos and (y - unidos[-1][2]) < unidos[-1][1] * 1.6:
-            unidos[-1][0].extend(partes)
-        else:
-            unidos.append([list(partes), tam, y])
+    for r in renglones:
+        if unidos:
+            ant = unidos[-1]
+            if (r['y'] - ant['y']) < ant['tam'] * 1.6 and r['x0'] < ant['x1'] and r['x1'] > ant['x0']:
+                ant['texto'] += ' ' + r['texto']      # otro renglon: siempre con espacio
+                continue
+        unidos.append(dict(r))
 
     salida = []
-    for partes, tam, y in unidos:
-        texto = ' '.join(' '.join(partes).split())
+    for r in unidos:
+        texto = ' '.join(r['texto'].split())
         if len(texto) >= 3:
-            rel = (y - pagina.rect.y0) / pagina.rect.height
+            rel = (r['y'] - pagina.rect.y0) / pagina.rect.height
             salida.append((texto, round(max(0.0, min(1.0, rel)), 4)))
     return salida
 
@@ -214,6 +269,15 @@ def escribir_manifiesto():
         if original is None:
             continue
         doc = pymupdf.open(original)
+
+        # el corte se calcula con todo el documento, no hoja por hoja
+        medidas = [s['size']
+                   for pg in doc
+                   for b in pg.get_text('dict')['blocks']
+                   for l in b.get('lines', [])
+                   for s in l['spans'] if s['text'].strip()]
+        corte = max(medidas) * PROPORCION_TITULO if medidas else 0
+
         numero = 0
         for pagina in doc:
             recorte = pymupdf.Rect(pagina.trimbox)
@@ -234,7 +298,7 @@ def escribir_manifiesto():
             hojas.append({'carpeta': sec['destino'], 'hoja': numero,
                           'ancho': caja.width, 'alto': caja.height})
 
-            for texto, y in titulos_de(pagina):
+            for texto, y in titulos_de(pagina, corte):
                 titulos.append({'carpeta': sec['destino'], 'hoja': numero,
                                 'titulo': texto, 'y': y})
         doc.close()

@@ -165,6 +165,66 @@
   ],
   "titulos": [
     {
+      "carpeta": "menu",
+      "hoja": 2,
+      "titulo": "Clásicos",
+      "y": 0.0809
+    },
+    {
+      "carpeta": "menu",
+      "hoja": 2,
+      "titulo": "Exclusivos",
+      "y": 0.295
+    },
+    {
+      "carpeta": "menu",
+      "hoja": 2,
+      "titulo": "Whiskies",
+      "y": 0.4739
+    },
+    {
+      "carpeta": "menu",
+      "hoja": 2,
+      "titulo": "Bebidas e Infusiones",
+      "y": 0.7049
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "titulo": "Classic Drinks",
+      "y": 0.0744
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "titulo": "Whiskies",
+      "y": 0.4646
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "titulo": "Beers",
+      "y": 0.6461
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "titulo": "Soft Drinks & Infusions",
+      "y": 0.7116
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "titulo": "Vermouths",
+      "y": 0.7384
+    },
+    {
+      "carpeta": "ingles",
+      "hoja": 2,
+      "titulo": "Aperitifs",
+      "y": 0.7525
+    },
+    {
       "carpeta": "vinos",
       "hoja": 1,
       "titulo": "Espumantes",
