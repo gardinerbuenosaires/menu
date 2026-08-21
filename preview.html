@@ -252,21 +252,29 @@
      carpeta   : nombre de la carpeta
      nombre    : como se llaman los archivos (n = numero de hoja)
      max       : techo de seguridad (la busqueda corta sola antes)
-     idioma    : 'es' o 'en'; define en que solapa se muestra
-     etiquetas : nombre de cada hoja en la barra de arriba, en orden.
-                 Si aparecen hojas de mas sin etiqueta, igual se
-                 muestran; solo que no tienen salto propio en la barra.
+     idiomas   : en que solapas se muestra. Los vinos van en las dos,
+                 porque los nombres de las bodegas no se traducen.
+     etiquetas : nombre de cada hoja en la barra de arriba, por idioma
+                 y en orden. Si aparecen hojas de mas sin etiqueta,
+                 igual se muestran; solo que no tienen salto propio.
+
+   OJO con el orden de la lista: es el orden en que se ven las hojas.
+   Va menu -> ingles -> vinos para que quede bien en los dos idiomas
+   (en espanol: Comida, Bebidas, Vinos / en ingles: Menu, Drinks, Wines).
    ================================================================== */
 
 const SECCIONES = [
-  { carpeta: 'menu',   nombre: n => 'gr' + n,                max: 15, idioma: 'es',
-    etiquetas: ['Comida', 'Bebidas'] },
+  { carpeta: 'menu',   nombre: n => 'gr' + n,                max: 15,
+    idiomas: ['es'],
+    etiquetas: { es: ['Comida', 'Bebidas'] } },
 
-  { carpeta: 'vinos',  nombre: n => 'gr_vinos-' + pad(n, 2), max: 40, idioma: 'es',
-    etiquetas: ['Vinos'] },
+  { carpeta: 'ingles', nombre: n => 'gr_en_' + n,            max: 15,
+    idiomas: ['en'],
+    etiquetas: { en: ['Menu', 'Drinks'] } },
 
-  { carpeta: 'ingles', nombre: n => 'gr_en_' + n,            max: 15, idioma: 'en',
-    etiquetas: ['Menu', 'Drinks'] }
+  { carpeta: 'vinos',  nombre: n => 'gr_vinos-' + pad(n, 2), max: 40,
+    idiomas: ['es', 'en'],
+    etiquetas: { es: ['Vinos'], en: ['Wines'] } }
 ];
 
 /* CONTACTO: completar lo que corresponda.
@@ -341,7 +349,8 @@ function ponerIdioma(idioma) {
   document.documentElement.lang = idioma;
 
   document.querySelectorAll('.hoja').forEach(h => {
-    h.classList.toggle('oculta', h.dataset.idioma !== idioma);
+    // una hoja puede pertenecer a mas de un idioma (los vinos, por ejemplo)
+    h.classList.toggle('oculta', !h.dataset.idiomas.split(' ').includes(idioma));
   });
   document.querySelectorAll('#navegacion a').forEach(a => {
     a.classList.toggle('oculta', a.dataset.idioma !== idioma);
@@ -449,14 +458,15 @@ async function armarCarta() {
     hojas.forEach((hoja, i) => {
       const bloque = document.createElement('div');
       bloque.className = 'hoja';
-      bloque.dataset.idioma = sec.idioma;
+      bloque.dataset.idiomas = sec.idiomas.join(' ');
+      bloque.id = sec.carpeta + '-' + (i + 1);
       bloque.appendChild(crearImg(hoja, total === 0));
 
-      // si esta hoja tiene nombre, se le pone ancla y va a la barra de arriba
-      const etiqueta = sec.etiquetas && sec.etiquetas[i];
-      if (etiqueta) {
-        bloque.id = sec.carpeta + '-' + (i + 1);
-        navegacion.appendChild(crearEnlace(etiqueta, bloque.id, sec.idioma));
+      // si la hoja tiene nombre en algun idioma, va como salto en la barra.
+      // Los vinos generan dos enlaces al mismo sitio: "Vinos" y "Wines".
+      for (const idioma of sec.idiomas) {
+        const etiqueta = sec.etiquetas && sec.etiquetas[idioma] && sec.etiquetas[idioma][i];
+        if (etiqueta) navegacion.appendChild(crearEnlace(etiqueta, bloque.id, idioma));
       }
 
       contenedor.appendChild(bloque);
