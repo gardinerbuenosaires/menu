@@ -1,69 +1,551 @@
 <!DOCTYPE html>
+<html lang="es">
 <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gardiner - Carta</title>
+  <meta name="theme-color" content="#020202">
+  <meta name="description" content="Carta de Gardiner. Comida, bebidas y carta de vinos.">
+  <meta property="og:title" content="Gardiner - Carta">
+  <meta property="og:description" content="Comida, bebidas y carta de vinos.">
+  <meta property="og:image" content="logo/logoGR.jpg">
+  <link rel="icon" href="logo/logoGR.jpg">
+  <link rel="preload" as="image" href="logo/logoGR-blanco.png">
 
+  <!-- Lato es la tipografia de gardiner.com.ar -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+  /* Paleta tomada del sitio oficial:
+     html { background-color: #020202 }  y el logo en blanco.       */
+  :root {
+    --fondo:      #020202;
+    --superficie: #0c0c0c;
+    --texto:      #ffffff;
+    --tenue:      rgba(255, 255, 255, .58);
+    --linea:      rgba(255, 255, 255, .22);
+    --papel:      #ffffff;
+    --barra:      62px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: Lato, "Helvetica Neue", Arial, sans-serif;
+    font-weight: 400;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  /* ---------- barra fija de arriba ---------- */
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(2, 2, 2, .95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--linea);
+  }
+
+  .barra {
+    height: var(--barra);
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  /* el logo es apaisado 3.6:1 (palabra + filigrana, sin los filetes) */
+  .barra img { height: 30px; width: auto; display: block; }
+
+  .idiomas {
+    display: flex;
+    border: 1px solid var(--linea);
+    border-radius: 2px;
+    overflow: hidden;
+    flex: none;
+  }
+
+  .idiomas button {
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    padding: 6px 13px;
+    border: 0;
+    background: transparent;
+    color: var(--tenue);
+    cursor: pointer;
+  }
+
+  .idiomas button[aria-pressed="true"] { background: var(--texto); color: var(--fondo); }
+
+  nav {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 16px 11px;
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  nav a {
+    color: var(--tenue);
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    padding-bottom: 3px;
+    border-bottom: 1px solid transparent;
+  }
+
+  nav a:hover, nav a:focus-visible { color: var(--texto); border-bottom-color: var(--texto); }
+
+  /* ---------- las hojas ---------- */
+
+  main { max-width: 820px; margin: 0 auto; padding: 26px 16px 8px; }
+
+  .hoja {
+    margin: 0 0 26px;
+    scroll-margin-top: calc(var(--barra) + 46px);
+  }
+
+  .hoja img {
+    display: block;
+    width: 100%;
+    background: var(--papel);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .8);
+    cursor: zoom-in;
+  }
+
+  .oculta { display: none; }
+
+  /* ---------- pie con los contactos ---------- */
+
+  footer {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 8px 16px 26px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  footer a {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: 1px solid var(--linea);
+    border-radius: 2px;
+    color: var(--texto);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+  }
+
+  footer a:hover, footer a:focus-visible {
+    background: var(--texto);
+    color: var(--fondo);
+    border-color: var(--texto);
+  }
+
+  footer svg { width: 16px; height: 16px; fill: currentColor; flex: none; }
+
+  #datos {
+    text-align: center;
+    padding: 0 16px 46px;
+    color: var(--tenue);
+    font-size: 12.5px;
+    letter-spacing: .06em;
+    line-height: 1.9;
+  }
+
+  #datos a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--linea); }
+
+  /* ---------- pantalla de carga ---------- */
+
+  #aviso {
+    text-align: center;
+    padding: 70px 20px;
+    color: var(--tenue);
+    letter-spacing: .22em;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  #aviso img { width: 210px; max-width: 62%; margin-bottom: 26px; }
+
+  /* ---------- visor de pantalla completa ---------- */
+
+  #visor {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(2, 2, 2, .98);
+    display: none;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #visor.abierto { display: block; }
+
+  #visor img {
+    display: block;
+    margin: auto;
+    max-width: 100%;
+    max-height: 100vh;
+    background: var(--papel);
+    cursor: zoom-in;
+  }
+
+  /* al tocar la hoja se agranda y se puede recorrer arrastrando */
+  #visor img.ampliada {
+    max-width: none;
+    max-height: none;
+    width: 190%;
+    cursor: zoom-out;
+  }
+
+  #cerrar {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 51;
+    width: 44px;
+    height: 44px;
+    border-radius: 2px;
+    border: 1px solid var(--linea);
+    background: rgba(2, 2, 2, .9);
+    color: var(--texto);
+    font: 22px/1 Lato, Arial, sans-serif;
+    cursor: pointer;
+    display: none;          /* el JS lo muestra al abrir el visor */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+</style>
 </head>
 
 <body>
-       <img src="logo/logoGR.jpg" width="100%">
-       <img src="menu/gr1.jpg" width="100%">
-       <hr color="green">
-       <img src="logo/logoGR.jpg" width="100%">
-       <img src="menu/gr2.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-01.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-02.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-03.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-04.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-05.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-06.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-07.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-08.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-09.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-10.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-11.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-12.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-13.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-14.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-15.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-16.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-17.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-18.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-19.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-20.jpg" width="100%">
-       <hr color="green">
-       <img src="vinos/gr_vinos-21.jpg" width="100%">
-       <hr color="green">
 
+<header hidden id="cabecera">
+  <div class="barra">
+    <img src="logo/logoGR-blanco.png" alt="Gardiner">
+    <div class="idiomas">
+      <button type="button" data-idioma="es" aria-pressed="true">ES</button>
+      <button type="button" data-idioma="en" aria-pressed="false">EN</button>
+    </div>
+  </div>
+  <nav id="navegacion"></nav>
+</header>
 
+<main id="carta"></main>
+<footer id="contacto" hidden></footer>
+<div id="datos" hidden></div>
 
-       <img src="ingles/gr_en_1.jpg" width="100%">
-       <hr color="green">
-       <img src="ingles/gr_en_2.jpg" width="100%">
-       <hr color="green">
+<div id="visor" role="dialog" aria-modal="true" aria-label="Hoja ampliada">
+  <button id="cerrar" type="button" aria-label="Cerrar">&times;</button>
+</div>
 
-      
+<div id="aviso">
+  <img src="logo/logoGR-blanco.png" alt="Gardiner"><br>
+  Cargando la carta
+</div>
 
-        
+<script>
+/* ==================================================================
+   CONFIGURACION - lo unico que se toca
+   ==================================================================
+
+   SECCIONES: de donde salen las hojas.
+     carpeta   : nombre de la carpeta
+     nombre    : como se llaman los archivos (n = numero de hoja)
+     max       : techo de seguridad (la busqueda corta sola antes)
+     idiomas   : en que solapas se muestra. Los vinos van en las dos,
+                 porque los nombres de las bodegas no se traducen.
+     etiquetas : nombre de cada hoja en la barra de arriba, por idioma
+                 y en orden. Si aparecen hojas de mas sin etiqueta,
+                 igual se muestran; solo que no tienen salto propio.
+
+   OJO con el orden de la lista: es el orden en que se ven las hojas.
+   Va menu -> ingles -> vinos para que quede bien en los dos idiomas
+   (en espanol: Comida, Bebidas, Vinos / en ingles: Menu, Drinks, Wines).
+   ================================================================== */
+
+const SECCIONES = [
+  { carpeta: 'menu',   nombre: n => 'gr' + n,                max: 15,
+    idiomas: ['es'],
+    etiquetas: { es: ['Comida', 'Bebidas'] } },
+
+  { carpeta: 'ingles', nombre: n => 'gr_en_' + n,            max: 15,
+    idiomas: ['en'],
+    etiquetas: { en: ['Menu', 'Drinks'] } },
+
+  { carpeta: 'vinos',  nombre: n => 'gr_vinos-' + pad(n, 2), max: 40,
+    idiomas: ['es', 'en'],
+    etiquetas: { es: ['Vinos'], en: ['Wines'] } }
+];
+
+/* CONTACTO: datos tomados de gardiner.com.ar.
+   Lo que se deje vacio simplemente no aparece. */
+const CONTACTO = {
+  reservas:  'https://www.wokiapp.com/reservas/gardiner-restaurant',
+  instagram: 'gardineroficial',
+  telefono:  '+541147880437',       // para el link de llamada
+  telVisible:'4788-0437',
+  direccion: 'Av. Rafael Obligado 6311, Buenos Aires',
+  email:     'gr@gardiner.com.ar'
+};
+
+const TEXTOS = {
+  es: { reservar: 'Reservar', llegar: 'Como llegar', llamar: 'Llamar', cargando: 'Cargando la carta' },
+  en: { reservar: 'Book a table', llegar: 'Directions', llamar: 'Call', cargando: 'Loading the menu' }
+};
+
+const EXTENSIONES = ['jpg', 'jpeg'];
+const LOTE = 5;          // cuantas hojas se sondean a la vez
+
+// ==================================================================
+
+function pad(n, largo) {
+  return String(n).padStart(largo, '0');
+}
+
+/* Con doble clic (file://) el navegador bloquea fetch, asi que ahi se usa
+   Image(). En GitHub Pages se usa HEAD, que pregunta "existe?" sin bajar
+   un solo byte de la foto. */
+const LOCAL = location.protocol === 'file:';
+
+function existe(url) {
+  if (LOCAL) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload  = () => resolve(url);
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  }
+  return fetch(url, { method: 'HEAD' }).then(r => r.ok ? url : null).catch(() => null);
+}
+
+function buscarHoja(sec, n) {
+  return Promise.all(
+    EXTENSIONES.map(ext => existe(sec.carpeta + '/' + sec.nombre(n) + '.' + ext))
+  ).then(r => r.find(Boolean) || null);
+}
+
+/* Sondea de a lotes y corta cuando un lote entero vino vacio.
+   Tolera huecos sueltos (falta la 7 pero esta la 8) sin cortar. */
+async function buscarHojas(sec) {
+  const hojas = [];
+  for (let n = 1; n <= sec.max; n += LOTE) {
+    const lote = [];
+    for (let i = n; i < n + LOTE && i <= sec.max; i++) lote.push(i);
+
+    const encontradas = (await Promise.all(lote.map(i => buscarHoja(sec, i)))).filter(Boolean);
+    if (!encontradas.length) break;
+    hojas.push(...encontradas);
+  }
+  return hojas;
+}
+
+// ---------- idioma ----------
+
+function idiomaGuardado() {
+  try {
+    const g = localStorage.getItem('idioma');
+    if (g === 'es' || g === 'en') return g;
+  } catch (e) { /* navegacion privada: no pasa nada, se sigue de largo */ }
+
+  // primera visita: si el telefono no esta en espanol, arranca en ingles
+  return (navigator.language || 'es').toLowerCase().startsWith('es') ? 'es' : 'en';
+}
+
+function ponerIdioma(idioma) {
+  document.documentElement.lang = idioma;
+
+  document.querySelectorAll('.hoja').forEach(h => {
+    // una hoja puede pertenecer a mas de un idioma (los vinos, por ejemplo)
+    h.classList.toggle('oculta', !h.dataset.idiomas.split(' ').includes(idioma));
+  });
+  document.querySelectorAll('#navegacion a').forEach(a => {
+    a.classList.toggle('oculta', a.dataset.idioma !== idioma);
+  });
+  document.querySelectorAll('.idiomas button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.idioma === idioma));
+  });
+  // los botones del pie cambian de texto, no de cantidad
+  document.querySelectorAll('#contacto a span').forEach(s => {
+    s.textContent = s.dataset[idioma];
+  });
+
+  try { localStorage.setItem('idioma', idioma); } catch (e) {}
+}
+
+// ---------- visor de pantalla completa ----------
+
+const visor = document.getElementById('visor');
+const botonCerrar = document.getElementById('cerrar');
+
+function abrirVisor(src) {
+  visor.querySelectorAll('img').forEach(i => i.remove());
+
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = 'Hoja de la carta';
+  img.addEventListener('click', () => img.classList.toggle('ampliada'));
+
+  visor.appendChild(img);
+  visor.classList.add('abierto');
+  botonCerrar.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function cerrarVisor() {
+  visor.classList.remove('abierto');
+  botonCerrar.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+botonCerrar.addEventListener('click', cerrarVisor);
+visor.addEventListener('click', e => { if (e.target === visor) cerrarVisor(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarVisor(); });
+
+// ---------- armado ----------
+
+function crearImg(src, prioritaria) {
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = 'Hoja de la carta';
+  img.decoding = 'async';
+  if (prioritaria) {
+    img.loading = 'eager';
+    img.fetchPriority = 'high';
+  } else {
+    img.loading = 'lazy';
+  }
+  img.addEventListener('click', () => abrirVisor(src));
+  return img;
+}
+
+function crearEnlace(texto, ancla, idioma) {
+  const a = document.createElement('a');
+  a.href = '#' + ancla;
+  a.textContent = texto;
+  a.dataset.idioma = idioma;
+  return a;
+}
+
+const ICONOS = {
+  reservar:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v2H5.5A2.5 2.5 0 003 6.5v13A2.5 2.5 0 005.5 22h13a2.5 2.5 0 002.5-2.5v-13A2.5 2.5 0 0018.5 4H17V2h-2v2H9V2H7zm12 8v9.5c0 .3-.2.5-.5.5h-13a.5.5 0 01-.5-.5V10h14z"/></svg>',
+  instagram: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.2c3.2 0 3.6 0 4.9.1 1.2.1 1.8.2 2.2.4.6.2 1 .5 1.4 1 .5.4.8.8 1 1.4.2.4.3 1 .4 2.2.1 1.3.1 1.7.1 4.9s0 3.6-.1 4.9c-.1 1.2-.2 1.8-.4 2.2-.2.6-.5 1-1 1.4-.4.5-.8.8-1.4 1-.4.2-1 .3-2.2.4-1.3.1-1.7.1-4.9.1s-3.6 0-4.9-.1c-1.2-.1-1.8-.2-2.2-.4-.6-.2-1-.5-1.4-1-.5-.4-.8-.8-1-1.4-.2-.4-.3-1-.4-2.2-.1-1.3-.1-1.7-.1-4.9s0-3.6.1-4.9c.1-1.2.2-1.8.4-2.2.2-.6.5-1 1-1.4.4-.5.8-.8 1.4-1 .4-.2 1-.3 2.2-.4 1.3-.1 1.7-.1 4.9-.1zm0 3.2a6.6 6.6 0 100 13.2 6.6 6.6 0 000-13.2zm0 10.9a4.3 4.3 0 110-8.6 4.3 4.3 0 010 8.6zm6.8-11.1a1.5 1.5 0 11-3.1 0 1.5 1.5 0 013.1 0z"/></svg>',
+  llegar:    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 00-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6.5a2.5 2.5 0 010 5z"/></svg>',
+  llamar:    '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.6 10.8a15.5 15.5 0 006.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 013 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z"/></svg>'
+};
+
+function armarContacto() {
+  const pie = document.getElementById('contacto');
+  const botones = [];
+
+  if (CONTACTO.reservas)  botones.push([CONTACTO.reservas, 'reservar', TEXTOS.es.reservar, TEXTOS.en.reservar]);
+  if (CONTACTO.direccion) botones.push(['https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(CONTACTO.direccion), 'llegar', TEXTOS.es.llegar, TEXTOS.en.llegar]);
+  if (CONTACTO.telefono)  botones.push(['tel:' + CONTACTO.telefono, 'llamar', TEXTOS.es.llamar, TEXTOS.en.llamar]);
+  if (CONTACTO.instagram) botones.push(['https://instagram.com/' + CONTACTO.instagram, 'instagram', 'Instagram', 'Instagram']);
+
+  for (const [url, icono, textoEs, textoEn] of botones) {
+    const a = document.createElement('a');
+    a.href = url;
+    if (!url.startsWith('tel:')) { a.target = '_blank'; a.rel = 'noopener'; }
+    a.innerHTML = ICONOS[icono];
+
+    const span = document.createElement('span');
+    span.dataset.es = textoEs;
+    span.dataset.en = textoEn;
+    span.textContent = textoEs;    // textContent, no innerHTML: nada que se pueda inyectar
+    a.appendChild(span);
+    pie.appendChild(a);
+  }
+  if (botones.length) pie.hidden = false;
+
+  // linea de datos debajo de los botones
+  const datos = document.getElementById('datos');
+  const partes = [];
+  if (CONTACTO.direccion)  partes.push(CONTACTO.direccion);
+  if (CONTACTO.telVisible) partes.push('Tel. ' + CONTACTO.telVisible);
+  if (CONTACTO.email)      partes.push(CONTACTO.email);
+
+  if (partes.length) {
+    datos.textContent = partes.join('  ·  ');
+    datos.hidden = false;
+  }
+}
+
+async function armarCarta() {
+  const contenedor = document.getElementById('carta');
+  const navegacion = document.getElementById('navegacion');
+  const aviso = document.getElementById('aviso');
+  let total = 0;
+
+  for (const sec of SECCIONES) {
+    const hojas = await buscarHojas(sec);
+
+    hojas.forEach((hoja, i) => {
+      const bloque = document.createElement('div');
+      bloque.className = 'hoja';
+      bloque.dataset.idiomas = sec.idiomas.join(' ');
+      bloque.id = sec.carpeta + '-' + (i + 1);
+      bloque.appendChild(crearImg(hoja, total === 0));
+
+      // si la hoja tiene nombre en algun idioma, va como salto en la barra.
+      // Los vinos generan dos enlaces al mismo sitio: "Vinos" y "Wines".
+      for (const idioma of sec.idiomas) {
+        const etiqueta = sec.etiquetas && sec.etiquetas[idioma] && sec.etiquetas[idioma][i];
+        if (etiqueta) navegacion.appendChild(crearEnlace(etiqueta, bloque.id, idioma));
+      }
+
+      contenedor.appendChild(bloque);
+      total++;
+    });
+  }
+
+  if (!total) {
+    aviso.textContent = 'No se pudo cargar la carta. Proba refrescar la pagina.';
+    return;
+  }
+
+  armarContacto();
+  ponerIdioma(idiomaGuardado());
+  aviso.remove();
+  document.getElementById('cabecera').hidden = false;
+}
+
+document.querySelectorAll('.idiomas button').forEach(b => {
+  b.addEventListener('click', () => {
+    ponerIdioma(b.dataset.idioma);
+    window.scrollTo({ top: 0 });
+  });
+});
+
+armarCarta();
+</script>
 </body>
-
-
 </html>

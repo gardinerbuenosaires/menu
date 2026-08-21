@@ -1,0 +1,266 @@
+"""
+Convierte los originales de Illustrator en las hojas sueltas de la carta.
+
+Se sube UN archivo por seccion a la carpeta originales/ y este script abre
+cada uno, renderiza cada mesa de trabajo como un JPG con el nombre que la
+carta espera, y borra las hojas que dejaron de existir.
+
+Asi la cantidad de hojas deja de ser algo que hay que mantener a mano:
+es, literalmente, la cantidad de mesas de trabajo del archivo.
+
+Acepta .pdf y tambien .ai, siempre que el .ai se haya guardado con la
+opcion "Crear archivo PDF compatible" (viene tildada por defecto).
+"""
+import hashlib
+import json
+import re
+import statistics
+import unicodedata
+from pathlib import Path
+
+import pymupdf
+
+ORIGINALES = Path('originales')
+# El ancho de cada hoja NO es fijo: se calcula para que el texto reciba
+# siempre la misma cantidad de pixeles por letra.
+#
+# La carta no esta compuesta pareja: las hojas de vinos 1 a 18 usan Palatino
+# de 11 pt y las 19 a 23 usan Baskerville de 13 pt. Renderizadas todas al
+# mismo ancho, las de 11 pt reciben menos pixeles por letra y se ven blandas
+# al lado de las otras. Calculando el ancho por hoja, quedan parejas.
+OBJETIVO_PX = 35       # alto en pixeles del cuerpo de texto
+ANCHO_MIN   = 1200
+ANCHO_MAX   = 2400     # tope, por si alguna hoja tiene la letra diminuta
+CALIDAD    = 82
+REGISTRO   = ORIGINALES / 'procesado.json'   # que version de cada original ya se convirtio
+
+# Son tres archivos de Illustrator distintos: espanol, ingles y vinos.
+#
+# origen  : como se llama la seccion (para los mensajes y el registro)
+# alias   : palabras que identifican la seccion sin lugar a dudas
+# debiles : palabras genericas, que solo valen si ningun alias fuerte
+#           acerto. 'carta' esta aca porque los tres archivos son cartas:
+#           "Carta de Vinos" tiene que ir a vinos, no al espanol.
+# destino : en que carpeta van las hojas
+# nombre  : como se llama cada hoja (n = numero de mesa de trabajo)
+SECCIONES = [
+    {'origen': 'menu',   'destino': 'menu',   'nombre': lambda n: f'gr{n}',
+     'alias': ['menu', 'espanol', 'español', 'castellano', 'es'],
+     'debiles': ['carta', 'gardiner']},
+
+    {'origen': 'ingles', 'destino': 'ingles', 'nombre': lambda n: f'gr_en_{n}',
+     'alias': ['ingles', 'inglés', 'english', 'en'],
+     'debiles': []},
+
+    {'origen': 'vinos',  'destino': 'vinos',  'nombre': lambda n: f'gr_vinos-{n:02d}',
+     'alias': ['vinos', 'vino', 'wines', 'carta-de-vinos', 'cartadevinos'],
+     'debiles': []},
+]
+
+EXTENSIONES = ('.pdf', '.ai')
+
+
+def es_original(p):
+    return p.is_file() and p.suffix.lower() in EXTENSIONES
+
+
+def normalizar(texto):
+    """'Gardiner Carta Espanol 2026' -> 'gardinercartaespanol2026'
+
+    Saca acentos, espacios, guiones y mayusculas, para que el nombre del
+    archivo pueda ser el que Illustrator haya puesto sin que importe.
+    """
+    texto = unicodedata.normalize('NFKD', texto)
+    texto = ''.join(c for c in texto if not unicodedata.combining(c))
+    return re.sub(r'[^a-z0-9]', '', texto.lower())
+
+
+def a_que_seccion_pertenece(p):
+    """Devuelve la seccion de ese archivo, o None si no se puede saber.
+
+    Va en tres pasadas, de lo mas seguro a lo mas flojo:
+      1. nombre exacto             'vinos.pdf'
+      2. contiene una palabra clave 'Gardiner - Vinos 2026.pdf'
+      3. contiene una generica      'Carta Gardiner.pdf' -> espanol
+
+    Las claves cortas como 'es' o 'en' solo valen en la pasada 1, porque
+    si no 'ingles' contendria 'es' y seria un lio.
+    """
+    stem = normalizar(p.stem)
+
+    def contiene(palabras):
+        return [sec for sec in SECCIONES
+                if any(len(a) >= 4 and normalizar(a) in stem for a in sec[palabras])]
+
+    for sec in SECCIONES:
+        if stem in {normalizar(a) for a in sec['alias']}:
+            return sec
+
+    for palabras in ('alias', 'debiles'):
+        encontradas = contiene(palabras)
+        if len(encontradas) == 1:
+            return encontradas[0]
+        if len(encontradas) > 1:
+            return None    # ambigua de verdad: mejor avisar que adivinar
+
+    return None
+
+
+def buscar_original(sec):
+    """Devuelve el archivo original de esa seccion, o None si no se subio."""
+    for p in sorted(ORIGINALES.iterdir()):
+        if es_original(p) and a_que_seccion_pertenece(p) is sec:
+            return p
+    return None
+
+
+def avisar_de_los_no_reconocidos(usados):
+    """Un PDF con el nombre mal puesto no puede pasar desapercibido."""
+    sueltos = [p for p in sorted(ORIGINALES.iterdir()) if es_original(p) and p not in usados]
+    if not sueltos:
+        return
+    print('\nOJO: estos archivos estan en originales/ pero no se reconocieron:')
+    for p in sueltos:
+        print(f'   {p.name}')
+    print('Los nombres aceptados son:')
+    for sec in SECCIONES:
+        print(f"   {sec['destino']:8} -> " + ', '.join(sec['alias'] + sec['debiles']))
+
+
+def huella(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def leer_registro():
+    try:
+        return json.loads(REGISTRO.read_text())
+    except Exception:
+        return {}
+
+
+def hojas_existentes(sec):
+    """Las hojas que hoy hay en la carpeta destino y siguen el patron de nombres.
+
+    Se arma comparando contra los nombres que este script genera, para no
+    tocar jamas un archivo que haya puesto alguien a mano con otro nombre.
+    """
+    carpeta = Path(sec['destino'])
+    if not carpeta.is_dir():
+        return {}
+
+    esperados = {}
+    for n in range(1, 500):
+        esperados[sec['nombre'](n)] = n
+
+    encontradas = {}
+    for p in carpeta.iterdir():
+        if p.suffix.lower() in ('.jpg', '.jpeg') and p.stem in esperados:
+            encontradas[esperados[p.stem]] = p
+    return encontradas
+
+
+def ancho_para(pagina):
+    """Ancho en px para que el cuerpo de texto de esta hoja mida OBJETIVO_PX.
+
+    Se usa la mediana del tamano de letra, que representa el texto corrido
+    y no se deja arrastrar por un titulo grande o una nota al pie chica.
+    """
+    tam = [s['size']
+           for b in pagina.get_text('dict')['blocks']
+           for l in b.get('lines', [])
+           for s in l['spans'] if s['text'].strip()]
+
+    if not tam:
+        return ANCHO_MIN
+    mediana = statistics.median(tam)
+    ideal = OBJETIVO_PX / mediana * pagina.rect.width
+    return round(min(ANCHO_MAX, max(ANCHO_MIN, ideal)))
+
+
+def convertir(sec, original):
+    carpeta = Path(sec['destino'])
+    carpeta.mkdir(exist_ok=True)
+
+    doc = pymupdf.open(original)
+    print(f"  {original}  ->  {doc.page_count} mesa(s) de trabajo")
+
+    generadas = set()
+    numero = 0                 # cuenta solo las hojas que de verdad se publican
+    for i, pagina in enumerate(doc, start=1):
+        # Si el PDF se exporto con sangrado y marcas de corte, la hoja de
+        # verdad es el TrimBox: recortando ahi, las marcas y el margen
+        # sobrante no llegan a la carta aunque nadie apague esa opcion.
+        recorte = pymupdf.Rect(pagina.trimbox)
+        if recorte.is_valid and not recorte.is_empty and recorte != pagina.rect:
+            pagina.set_cropbox(recorte)
+            print(f'     hoja {i:2d}  tenia sangrado, se recorta al tamano final')
+
+        ancho = ancho_para(pagina)
+        zoom = ancho / pagina.rect.width
+        pix = pagina.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), colorspace=pymupdf.csRGB)
+
+        # Una mesa de trabajo vacia no tiene que salir como hoja en blanco.
+        # Se saltea sin gastar numero, asi la numeracion no deja huecos.
+        if not any(b != 255 for b in pix.samples):
+            print(f'     mesa {i:2d}  esta vacia, se saltea')
+            continue
+
+        numero += 1
+        destino = carpeta / (sec['nombre'](numero) + '.jpg')
+        pix.pil_save(destino, format='JPEG', quality=CALIDAD, optimize=True, progressive=True)
+
+        generadas.add(numero)
+        print(f"     hoja {numero:2d}  ->  {destino}  ({destino.stat().st_size // 1024} KB, {pix.width}x{pix.height})")
+
+    doc.close()
+
+    # las hojas que sobraron ya no estan en el original: se van
+    for numero, p in sorted(hojas_existentes(sec).items()):
+        if numero not in generadas:
+            print(f"     sobra   ->  {p}  (ya no esta en el original, se borra)")
+            p.unlink()
+
+    return len(generadas)
+
+
+def main():
+    if not ORIGINALES.is_dir():
+        print('No hay carpeta originales/. No hay nada que convertir.')
+        return
+
+    registro = leer_registro()
+    nuevo = dict(registro)
+    trabajo = False
+    usados = []
+
+    for sec in SECCIONES:
+        original = buscar_original(sec)
+        if original is not None:
+            usados.append(original)
+
+        if original is None:
+            # Sin original no se toca la carpeta. Es a proposito: si alguien
+            # borra el PDF por error, las hojas que ya estan siguen ahi.
+            print(f"  {sec['origen']}: no hay original, se deja como esta")
+            continue
+
+        h = huella(original)
+        if registro.get(sec['origen']) == h:
+            print(f"  {sec['origen']}: sin cambios desde la ultima vez")
+            continue
+
+        convertir(sec, original)
+        nuevo[sec['origen']] = h
+        trabajo = True
+
+    if trabajo:
+        REGISTRO.write_text(json.dumps(nuevo, indent=2, sort_keys=True) + '\n')
+        print('\nHojas regeneradas.')
+    else:
+        print('\nNada para hacer.')
+
+    avisar_de_los_no_reconocidos(usados)
+
+
+if __name__ == '__main__':
+    main()
