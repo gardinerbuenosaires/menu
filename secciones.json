@@ -147,8 +147,8 @@
     {
       "carpeta": "vinos",
       "hoja": 21,
-      "ancho": 1526,
-      "alto": 2175
+      "ancho": 1511,
+      "alto": 2154
     },
     {
       "carpeta": "vinos",
@@ -252,13 +252,13 @@
       "carpeta": "vinos",
       "hoja": 3,
       "titulo": "Vinos espumantes del mundo",
-      "y": 0.0899
+      "y": 0.0886
     },
     {
       "carpeta": "vinos",
       "hoja": 3,
       "titulo": "Vinos Blancos",
-      "y": 0.3523
+      "y": 0.3412
     },
     {
       "carpeta": "vinos",
@@ -282,7 +282,7 @@
       "carpeta": "vinos",
       "hoja": 19,
       "titulo": "Nuestra Cava",
-      "y": 0.1128
+      "y": 0.1115
     }
   ]
 }
